@@ -53,9 +53,9 @@ class ThermalPrinter(private val context: Context) {
         text("BERKAH REJEKI"); newline()
         write(byteArrayOf(0x1B, 0x21, 0x00))
         text("Toko Retail & Sembako"); newline()
-        text("Jl. Raya No. 123"); newline()
-        text("Telp: 0812-3456-7890"); newline()
-        text("--------------------------------"); newline()
+        text("DS.Ringin kembar RT. 02 Rw.07"); newline()
+        text("Telp: 085843866617); newline()
+        text("---Terimakasih belanja di toko kami---------"); newline()
 
         write(byteArrayOf(0x1B, 0x61, 0x00))
         text("No : ${trx.invoiceNo}"); newline()
