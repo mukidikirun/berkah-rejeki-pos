@@ -19,7 +19,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontFamily
@@ -161,15 +160,11 @@ fun KasirScreen(vm: MainViewModel) {
         )
     }
 
-    // ===== PREVIEW NOTA =====
     lastTrx?.let { trx ->
         ReceiptPreviewDialog(
             trx = trx,
             onDismiss = { lastTrx = null },
-            onPrint = { trxToPrint ->
-                // Kirim ke printer lewat vm atau langsung (nanti di Riwayat)
-                lastTrx = null
-            }
+            onPrint = { lastTrx = null }
         )
     }
 }
@@ -228,9 +223,6 @@ fun CheckoutDialog(
     )
 }
 
-// =============================================================
-//  DIALOG PREVIEW NOTA — TAMPIL SETELAH TRANSAKSI BERHASIL
-// =============================================================
 @Composable
 fun ReceiptPreviewDialog(
     trx: Transaction,
@@ -273,28 +265,25 @@ fun ReceiptPreviewDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
                 Text(
-                    "Jl. Raya No. 123",
+                    "Dsn. Ringin Kembar",
                     fontSize = 11.sp,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
                 Text(
-    "Dsn. Ringin Kembar",
-    fontSize = 11.sp,
-    textAlign = TextAlign.Center,
-    modifier = Modifier.fillMaxWidth()
-)
-Text(
-    "Telp: +62 858-4386-6617",
-    fontSize = 11.sp,
-    textAlign = TextAlign.Center,
-    modifier = Modifier.fillMaxWidth()
-)
+                    "Telp: +62 858-4386-6617",
+                    fontSize = 11.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(Modifier.height(8.dp))
-                Text("--------------------------------",
-                    fontFamily = FontFamily.Monospace, fontSize = 12.sp,
-                    modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                Text(
+                    "--------------------------------",
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 12.sp,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
                 Spacer(Modifier.height(4.dp))
 
                 Text("No : ${trx.invoiceNo}",
@@ -305,52 +294,74 @@ Text(
                     fontFamily = FontFamily.Monospace, fontSize = 12.sp)
 
                 Spacer(Modifier.height(4.dp))
-                Text("--------------------------------",
-                    fontFamily = FontFamily.Monospace, fontSize = 12.sp,
-                    modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                Text(
+                    "--------------------------------",
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 12.sp,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
                 Spacer(Modifier.height(4.dp))
 
                 for (i in 0 until items.length()) {
                     val o = items.getJSONObject(i)
                     Text(o.getString("name"),
-                        fontFamily = FontFamily.Monospace, fontSize = 12.sp,
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold)
-                    Text("  ${o.getInt("qty")} x ${formatRp(o.getDouble("price"))} = ${formatRp(o.getDouble("subtotal"))}",
-                        fontFamily = FontFamily.Monospace, fontSize = 11.sp)
+                    Text(
+                        "  ${o.getInt("qty")} x ${formatRp(o.getDouble("price"))} = ${formatRp(o.getDouble("subtotal"))}",
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 11.sp
+                    )
                     Spacer(Modifier.height(2.dp))
                 }
 
                 Spacer(Modifier.height(4.dp))
-                Text("--------------------------------",
-                    fontFamily = FontFamily.Monospace, fontSize = 12.sp,
-                    modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                Text(
+                    "--------------------------------",
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 12.sp,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
                 Spacer(Modifier.height(4.dp))
 
                 Text("TOTAL : ${formatRp(trx.total)}",
-                    fontFamily = FontFamily.Monospace, fontSize = 13.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 13.sp,
                     fontWeight = FontWeight.Bold)
                 Text("BAYAR (${trx.paymentMethod}) : ${formatRp(trx.amountPaid)}",
                     fontFamily = FontFamily.Monospace, fontSize = 12.sp)
                 if (trx.paymentMethod == "CASH") {
                     Text("KEMBALI : ${formatRp(trx.change)}",
-                        fontFamily = FontFamily.Monospace, fontSize = 12.sp,
-                        color = Color(0xFF2E7D32), fontWeight = FontWeight.Bold)
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 12.sp,
+                        color = Color(0xFF2E7D32),
+                        fontWeight = FontWeight.Bold)
                 }
 
                 Spacer(Modifier.height(8.dp))
-                Text("================================",
-                    fontFamily = FontFamily.Monospace, fontSize = 12.sp,
-                    modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                Text(
+                    "================================",
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 12.sp,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
                 Spacer(Modifier.height(4.dp))
                 Text("Terima kasih telah berbelanja",
-                    fontSize = 11.sp, textAlign = TextAlign.Center,
+                    fontSize = 11.sp,
+                    textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth())
                 Text("Di Toko BERKAH REJEKI",
-                    fontSize = 11.sp, textAlign = TextAlign.Center,
+                    fontSize = 11.sp,
+                    textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth(),
                     fontWeight = FontWeight.Bold)
                 Text("Semoga Rezeki Anda Berkah",
-                    fontSize = 11.sp, textAlign = TextAlign.Center,
+                    fontSize = 11.sp,
+                    textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth())
             }
         },
