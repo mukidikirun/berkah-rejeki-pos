@@ -279,10 +279,17 @@ fun ReceiptPreviewDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
                 Text(
-                    "Telp: 0812-3456-7890",
-                    fontSize = 11.sp,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
+    "Dsn. Ringin Kembar",
+    fontSize = 11.sp,
+    textAlign = TextAlign.Center,
+    modifier = Modifier.fillMaxWidth()
+)
+Text(
+    "Telp: +62 858-4386-6617",
+    fontSize = 11.sp,
+    textAlign = TextAlign.Center,
+    modifier = Modifier.fillMaxWidth()
+)
                 )
                 Spacer(Modifier.height(8.dp))
                 Text("--------------------------------",
