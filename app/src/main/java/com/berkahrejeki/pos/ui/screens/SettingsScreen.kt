@@ -51,12 +51,15 @@ fun SettingsScreen(
         items(AppTheme.entries.toList()) { t ->
             val cs = themeColors(t)
             Card(
-                Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (t == currentTheme) cs.primaryContainer
-                                     else MaterialTheme.colorScheme.surface
-                ),
-                onClick = { onThemeChange(t) }
+    Modifier
+        .fillMaxWidth()
+        .padding(vertical = 4.dp)
+        .clickable { onThemeChange(t) },
+    colors = CardDefaults.cardColors(
+        containerColor = if (t == currentTheme) cs.primaryContainer
+                         else MaterialTheme.colorScheme.surface
+    )
+) {
             ) {
                 Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Surface(
