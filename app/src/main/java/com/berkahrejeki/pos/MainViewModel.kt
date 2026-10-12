@@ -26,7 +26,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     val users: StateFlow<List<User>> =
         userDao.getAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
+        
 
+private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
+val transactions: StateFlow<List<Transaction>> = _transactions
+
+fun loadTransactions() = viewModelScope.launch {
+    trxDao.getAll().collect { _transactions.value = it }
+}
     private val _cart = MutableStateFlow<List<CartItem>>(emptyList())
     val cart: StateFlow<List<CartItem>> = _cart
     val cartTotal: StateFlow<Double> = _cart.map { list ->
