@@ -191,7 +191,7 @@ fun LaporanScreen(vm: MainViewModel, session: Session) {
                                         scope.launch {
                                             val list = vm.getTransactionsList(fromTime, toTime)
                                             val fmt = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                                            val file = ExportHelper.exportToCSV(
+                                            val file = ExportHelper.exportToCsv(
                                                 ctx, list,
                                                 fmt.format(Date(fromTime)),
                                                 fmt.format(Date(toTime))
@@ -208,7 +208,7 @@ fun LaporanScreen(vm: MainViewModel, session: Session) {
                                 ) {
                                     Icon(Icons.Default.GridOn, null)
                                     Spacer(Modifier.width(4.dp))
-                                    Text("CSV")
+                                    Text("Csv")
                                 }
                                 Spacer(Modifier.width(8.dp))
                                 Button(
