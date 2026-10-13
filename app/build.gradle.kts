@@ -29,8 +29,6 @@ android {
 }
 
 dependencies {// Excel Export
-implementation("org.apache.poi:poi:5.2.3")
-implementation("org.apache.poi:poi-ooxml:5.2.3")
 
 // PDF Export
 implementation("com.itextpdf:itext7-core:7.2.5")
