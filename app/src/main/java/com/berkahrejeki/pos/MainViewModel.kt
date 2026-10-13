@@ -163,6 +163,9 @@ fun loadTransactions() = viewModelScope.launch {
         val perCashier: Map<String, Pair<Int, Double>>,
         val topProducts: List<Pair<String, Pair<Int, Double>>>
     )
+suspend fun getTransactionsList(from: Long, to: Long): List<Transaction> {
+    return trxDao.getByRangeOnce(from, to)
+}
 
     suspend fun generateLaporan(from: Long, to: Long, cashierId: Long? = null): Laporan {
         val list = if (cashierId != null) trxDao.getByCashier(cashierId, from, to)
