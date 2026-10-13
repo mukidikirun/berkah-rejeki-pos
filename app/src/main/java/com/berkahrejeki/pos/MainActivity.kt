@@ -65,8 +65,6 @@ fun BerkahRejekiApp(
         add(MenuItem("riwayat", "Riwayat", Icons.Default.ReceiptLong))
         add(MenuItem("laporan", "Laporan", Icons.Default.BarChart))
         if (session.isAdmin) add(MenuItem("users", "User", Icons.Default.Group))
-        add(MenuItem("printer", "Printer", Icons.Default.Print))
-        add(MenuItem("settings", "Tema", Icons.Default.Palette))
     }
 
     val current = nav.currentBackStackEntryAsState().value?.destination?.route
@@ -82,19 +80,36 @@ fun BerkahRejekiApp(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 actions = {
+                    // === IKON PRINTER ===
+                    IconButton(onClick = {
+                        nav.navigate("printer") {
+                            launchSingleTop = true
+                        }
+                    }) {
+                        Icon(Icons.Default.Print, "Printer")
+                    }
+                    // === IKON TEMA (PALETTE) ===
+                    IconButton(onClick = {
+                        nav.navigate("settings") {
+                            launchSingleTop = true
+                        }
+                    }) {
+                        Icon(Icons.Default.Palette, "Tema")
+                    }
+                    // === IKON LOGOUT ===
                     IconButton(onClick = { vm.logout() }) {
-                        Icon(Icons.Default.Logout, "Keluar",
-                            tint = MaterialTheme.colorScheme.onPrimary)
+                        Icon(Icons.Default.Logout, "Keluar")
                     }
                 }
             )
         },
         bottomBar = {
             NavigationBar {
-                menu.take(5).forEach { m ->
+                menu.forEach { m ->
                     NavigationBarItem(
                         selected = current == m.route,
                         onClick = {
