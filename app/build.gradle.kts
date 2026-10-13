@@ -49,3 +49,12 @@ dependencies {
     implementation("com.google.zxing:core:3.5.2")
     implementation("com.github.DantSu:ESCPOS-ThermalPrinter-Android:3.3.0")
 }
+// Excel Export
+implementation("org.apache.poi:poi:5.2.3")
+implementation("org.apache.poi:poi-ooxml:5.2.3")
+
+// PDF Export
+implementation("com.itextpdf:itext7-core:7.2.5")
+
+// File Provider (untuk share file)
+implementation("androidx.core:core-ktx:1.12.0")
