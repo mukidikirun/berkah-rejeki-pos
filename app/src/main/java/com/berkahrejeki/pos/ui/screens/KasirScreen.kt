@@ -39,6 +39,7 @@ import org.json.JSONArray
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.material.icons.filled.QrCodeScanner
 
 fun formatRp(v: Double): String =
     "Rp " + NumberFormat.getNumberInstance(Locale("id", "ID")).format(v)
@@ -83,7 +84,7 @@ fun KasirScreen(vm: MainViewModel) {
     var method by remember { mutableStateOf("CASH") }
     var paidInput by remember { mutableStateOf("") }
     var lastTrx by remember { mutableStateOf<Transaction?>(null) }
-
+var showScanner by remember { mutableStateOf(false) }
     val categories = remember(products) {
         listOf("Semua") + products.map { it.category }.distinct().sorted()
     }
@@ -97,21 +98,30 @@ fun KasirScreen(vm: MainViewModel) {
     Column(Modifier.fillMaxSize()) {
         // ===== SEARCH BAR =====
         OutlinedTextField(
-            value = search,
-            onValueChange = { search = it },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
-            placeholder = { Text("Cari produk atau scan barcode...") },
-            leadingIcon = { Icon(Icons.Default.Search, null) },
-            trailingIcon = {
-                if (search.isNotEmpty()) {
-                    IconButton(onClick = { search = "" }) {
-                        Icon(Icons.Default.Close, "Hapus")
-                    }
+    value = search,
+    onValueChange = { search = it },
+    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
+    placeholder = { Text("Cari produk atau scan barcode...") },
+    leadingIcon = { Icon(Icons.Default.Search, null) },
+    trailingIcon = {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (search.isNotEmpty()) {
+                IconButton(onClick = { search = "" }) {
+                    Icon(Icons.Default.Close, "Hapus")
                 }
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(12.dp)
-        )
+            }
+            IconButton(onClick = { showScanner = true }) {
+                Icon(
+                    Icons.Default.QrCodeScanner,
+                    "Scan Barcode",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    },
+    singleLine = true,
+    shape = RoundedCornerShape(12.dp)
+)
 
         // ===== FILTER KATEGORI =====
         LazyRow(
@@ -217,11 +227,30 @@ fun KasirScreen(vm: MainViewModel) {
     }
 
     // ===== PREVIEW NOTA =====
-    lastTrx?.let { trx ->
+        lastTrx?.let { trx ->
         ReceiptPreviewDialog(
             trx = trx,
             onDismiss = { lastTrx = null },
             onPrint = { lastTrx = null }
+        )
+    }
+
+    // ===== SCANNER KAMERA =====
+    if (showScanner) {
+        BarcodeScannerScreen(
+            onBarcodeDetected = { barcode ->
+                showScanner = false
+                val found = products.firstOrNull {
+                    it.barcode == barcode || it.name.equals(barcode, true)
+                }
+                if (found != null) {
+                    vm.addToCart(found)
+                    search = ""
+                } else {
+                    search = barcode
+                }
+            },
+            onClose = { showScanner = false }
         )
     }
 }
