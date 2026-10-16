@@ -12,8 +12,8 @@ android {
         applicationId = "com.berkahrejeki.pos"
         minSdk = 24
         targetSdk = 34
-        versionCode = 3
-        versionName = "2.1"
+        versionCode = 4
+        versionName = "2.2"
     }
 
     buildFeatures {
@@ -38,15 +38,7 @@ android {
     }
 }
 
-dependencies {// Camera & Barcode Scanner
-implementation("androidx.camera:camera-core:1.3.1")
-implementation("androidx.camera:camera-camera2:1.3.1")
-implementation("androidx.camera:camera-lifecycle:1.3.1")
-implementation("androidx.camera:camera-view:1.3.1")
-implementation("com.google.mlkit:barcode-scanning:17.2.0")
-implementation("com.google.guava:guava:32.1.3-android")
-}
-
+dependencies {
     // AndroidX Core
     implementation("androidx.core:core-ktx:1.12.0")
 
@@ -82,4 +74,12 @@ implementation("com.google.guava:guava:32.1.3-android")
 
     // PDF Export
     implementation("com.itextpdf:itext7-core:7.2.5")
+
+    // Camera & Barcode Scanner
+    implementation("androidx.camera:camera-core:1.3.1")
+    implementation("androidx.camera:camera-camera2:1.3.1")
+    implementation("androidx.camera:camera-lifecycle:1.3.1")
+    implementation("androidx.camera:camera-view:1.3.1")
+    implementation("com.google.mlkit:barcode-scanning:17.2.0")
+    implementation("com.google.guava:guava:32.1.3-android")
 }
