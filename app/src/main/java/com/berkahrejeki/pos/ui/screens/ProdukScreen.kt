@@ -20,6 +20,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.berkahrejeki.pos.MainViewModel
 import com.berkahrejeki.pos.data.Product
 import kotlinx.coroutines.launch
+import androidx.compose.material.icons.filled.QrCodeScanner
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -334,6 +335,7 @@ fun ProductFormDialog(
     var price by remember { mutableStateOf(initial?.price?.toInt()?.toString() ?: "") }
     var cost by remember { mutableStateOf(initial?.costPrice?.toInt()?.toString() ?: "") }
     var stock by remember { mutableStateOf(initial?.stock?.toString() ?: "") }
+    var showScanner by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -345,11 +347,16 @@ fun ProductFormDialog(
                     .verticalScroll(rememberScrollState())
             ) {
                 OutlinedTextField(
-                    name, { name = it },
-                    label = { Text("Nama Produk") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
+    barcode, { barcode = it },
+    label = { Text("Barcode (opsional)") },
+    modifier = Modifier.fillMaxWidth(),
+    singleLine = true,
+    trailingIcon = {
+        IconButton(onClick = { showScanner = true }) {
+            Icon(Icons.Default.QrCodeScanner, "Scan")
+        }
+    }
+)
                 Spacer(Modifier.height(6.dp))
                 OutlinedTextField(
                     barcode, { barcode = it },
@@ -407,6 +414,16 @@ fun ProductFormDialog(
                 }
             }) { Text("Simpan") }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Batal") } }
+                dismissButton = { TextButton(onClick = onDismiss) { Text("Batal") } }
     )
+
+    if (showScanner) {
+        BarcodeScannerScreen(
+            onBarcodeDetected = { result ->
+                barcode = result
+                showScanner = false
+            },
+            onClose = { showScanner = false }
+        )
+    }
 }
