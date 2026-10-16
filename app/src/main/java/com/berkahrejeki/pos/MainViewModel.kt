@@ -105,7 +105,32 @@ fun loadTransactions() = viewModelScope.launch {
     }
     fun updateProduct(p: Product) = viewModelScope.launch { productDao.update(p) }
     fun deleteProduct(p: Product) = viewModelScope.launch { productDao.delete(p) }
+    
+suspend fun findDuplicates(): List<Pair<String, List<Product>>> {
+    val all = products.value
+    if (all.isEmpty()) return emptyList()
+    val grouped = all.groupBy { it.name.trim().lowercase() }
+    return grouped
+        .filter { it.value.size > 1 }
+        .map { (_, list) -> list.first().name to list }
+        .sortedByDescending { it.second.size }
+}
 
+suspend fun removeDuplicates(): Int {
+    val all = products.value
+    val grouped = all.groupBy { it.name.trim().lowercase() }
+    var removed = 0
+    grouped.forEach { (_, list) ->
+        if (list.size > 1) {
+            val toDelete = list.drop(1)
+            toDelete.forEach {
+                productDao.delete(it)
+                removed++
+            }
+        }
+    }
+    return removed
+}
     fun seedIfEmpty() = viewModelScope.launch {
         if (products.value.isEmpty()) {
             productDao.insert(Product(name = "Beras 5kg", price = 65000.0, stock = 20, category = "Sembako"))
