@@ -13,7 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp  // ← INI YANG SEBELUMNYA HILANG
+import androidx.compose.ui.unit.sp
 import com.berkahrejeki.pos.data.Transaction
 import com.berkahrejeki.pos.printer.ThermalPrinter
 
@@ -49,7 +49,7 @@ fun PrinterScreen() {
                         color = MaterialTheme.colorScheme.onErrorContainer)
                     Spacer(Modifier.height(4.dp))
                     Text("Pastikan Printer sudah di-PAIR di Pengaturan HP dan izin Bluetooth sudah diberikan.", 
-                        fontSize = 11.sp,  // ← DIPERBAIKI
+                        fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onErrorContainer)
                 }
             }
@@ -65,8 +65,14 @@ fun PrinterScreen() {
                             }
                             Button(onClick = {
                                 val ok = printer.connect(d)
-                                connected = if (ok) d.name else null
-                            }) { Text(if (connected == d.name) "Terhubung" else "Hubungkan") }
+                                if (ok) {
+                                    connected = d.name
+                                } else {
+                                    connected = null
+                                }
+                            }) { 
+                                Text(if (connected == d.name) "Terhubung" else "Hubungkan") 
+                            }
                         }
                     }
                 }
@@ -74,23 +80,20 @@ fun PrinterScreen() {
         }
 
         Spacer(Modifier.height(16.dp))
-        Button(onClick = {
-    val ok = printer.connect(d)
-    if (ok) {
-        connected = d.name
-    } else {
-        connected = null
-        // Opsional: Anda bisa menambahkan Toast/Snackbar di sini
-    }
-}) { 
-    Text(
-        if (connected == d.name) "Terhubung" else "Hubungkan",
-        color = if (connected == d.name) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onPrimary
-    ) 
-        }
+        Button(
+            onClick = {
+                try {
+                    val testTrx = Transaction(
+                        invoiceNo = "TEST-" + System.currentTimeMillis(),
+                        itemsJson = """[{"name":"Test Item","price":10000,"qty":1,"subtotal":10000}]""",
+                        total = 10000.0,
+                        paymentMethod = "CASH",
+                        amountPaid = 10000.0,
+                        cashierName = "Test"
+                    )
                     printer.printReceipt(testTrx)
                 } catch (e: Exception) {
-                    // Abaikan error cetak, jangan sampai aplikasi crash
+                    // Abaikan error cetak agar tidak crash
                 }
             },
             enabled = connected != null,
