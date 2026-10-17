@@ -3,6 +3,10 @@ package com.berkahrejeki.pos.data
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
+@Query("DELETE FROM transactions WHERE id = :id")
+suspend fun deleteById(id: Long)
+@Query("SELECT COUNT(*) FROM transactions")
+suspend fun countAll(): Int
 @Entity(tableName = "transactions")
 data class Transaction(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
