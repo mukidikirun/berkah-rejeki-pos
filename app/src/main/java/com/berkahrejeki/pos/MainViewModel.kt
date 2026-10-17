@@ -1,6 +1,5 @@
 package com.berkahrejeki.pos
 
-import com.berkahrejeki.pos.data.ArchiveHelper
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -19,22 +18,27 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val trxDao = db.transactionDao()
     private val userDao = db.userDao()
 
+    // ===== SESSION =====
     private val _session = MutableStateFlow<Session?>(null)
     val session: StateFlow<Session?> = _session
 
+    // ===== PRODUCTS =====
     val products: StateFlow<List<Product>> =
         productDao.getAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
 
+    // ===== USERS =====
     val users: StateFlow<List<User>> =
         userDao.getAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
-        
 
-private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
-val transactions: StateFlow<List<Transaction>> = _transactions
+    // ===== TRANSACTIONS =====
+    private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
+    val transactions: StateFlow<List<Transaction>> = _transactions
 
-fun loadTransactions() = viewModelScope.launch {
-    trxDao.getAll().collect { _transactions.value = it }
-}
+    fun loadTransactions() = viewModelScope.launch {
+        trxDao.getAll().collect { _transactions.value = it }
+    }
+
+    // ===== CART =====
     private val _cart = MutableStateFlow<List<CartItem>>(emptyList())
     val cart: StateFlow<List<CartItem>> = _cart
     val cartTotal: StateFlow<Double> = _cart.map { list ->
@@ -44,8 +48,12 @@ fun loadTransactions() = viewModelScope.launch {
     fun addToCart(p: Product, qty: Int = 1) {
         val current = _cart.value.toMutableList()
         val idx = current.indexOfFirst { it.product.id == p.id }
-        if (idx >= 0) current[idx].qty += qty
-        else current.add(CartItem(p, qty))
+        if (idx >= 0) {
+            val existing = current[idx]
+            current[idx] = existing.copy(qty = existing.qty + qty)
+        } else {
+            current.add(CartItem(p, qty))
+        }
         _cart.value = current
     }
 
@@ -61,6 +69,7 @@ fun loadTransactions() = viewModelScope.launch {
 
     fun clearCart() { _cart.value = emptyList() }
 
+    // ===== AUTH =====
     fun hashPassword(p: String): String {
         val md = MessageDigest.getInstance("SHA-256")
         return md.digest(p.toByteArray()).joinToString("") { "%02x".format(it) }
@@ -98,42 +107,60 @@ fun loadTransactions() = viewModelScope.launch {
     fun addUser(u: User, pwd: String, onDone: () -> Unit = {}) = viewModelScope.launch {
         userDao.insert(u.copy(password = hashPassword(pwd))); onDone()
     }
+
     fun updateUser(u: User) = viewModelScope.launch { userDao.update(u) }
     fun deleteUser(u: User) = viewModelScope.launch { userDao.delete(u) }
 
+    // ===== PRODUCT CRUD =====
     fun addProduct(p: Product, onDone: () -> Unit = {}) = viewModelScope.launch {
         productDao.insert(p); onDone()
     }
+
     fun updateProduct(p: Product) = viewModelScope.launch { productDao.update(p) }
     fun deleteProduct(p: Product) = viewModelScope.launch { productDao.delete(p) }
-    
-suspend fun findDuplicates(): List<Pair<String, List<Product>>> {
-    val all = products.value
-    if (all.isEmpty()) return emptyList()
-    val grouped = all.groupBy { it.name.trim().lowercase() }
-    return grouped
-        .filter { it.value.size > 1 }
-        .map { (_, list) -> list.first().name to list }
-        .sortedByDescending { it.second.size }
-}
 
-suspend fun removeDuplicates(): Int {
-    val all = products.value
-    val grouped = all.groupBy { it.name.trim().lowercase() }
-    var removed = 0
-    grouped.forEach { (_, list) ->
-        if (list.size > 1) {
-            val toDelete = list.drop(1)
-            toDelete.forEach {
-                productDao.delete(it)
-                removed++
+    suspend fun findDuplicates(): List<Pair<String, List<Product>>> {
+        val all = products.value
+        if (all.isEmpty()) return emptyList()
+        val grouped = all.groupBy { it.name.trim().lowercase() }
+        return grouped
+            .filter { it.value.size > 1 }
+            .map { (_, list) -> list.first().name to list }
+            .sortedByDescending { it.second.size }
+    }
+
+    suspend fun removeDuplicates(): Int {
+        val all = products.value
+        val grouped = all.groupBy { it.name.trim().lowercase() }
+        var removed = 0
+        grouped.forEach { (_, list) ->
+            if (list.size > 1) {
+                val toDelete = list.drop(1)
+                toDelete.forEach {
+                    productDao.delete(it)
+                    removed++
+                }
             }
         }
+        return removed
     }
-    return removed
-}
+
     fun seedIfEmpty() = viewModelScope.launch {
-            // ============ AUTO-ARCHIVE ============
+        if (products.value.isEmpty()) {
+            productDao.insert(Product(name = "Beras 5kg", price = 65000.0, stock = 20, category = "Sembako"))
+            productDao.insert(Product(name = "Minyak Goreng 2L", price = 35000.0, stock = 30, category = "Sembako"))
+            productDao.insert(Product(name = "Gula 1kg", price = 15000.0, stock = 25, category = "Sembako"))
+            productDao.insert(Product(name = "Aqua 600ml", price = 4000.0, stock = 48, category = "Minuman"))
+            productDao.insert(Product(name = "Indomie Goreng", price = 3500.0, stock = 100, category = "Makanan"))
+        }
+    }
+
+    // ===== AUTO ARCHIVE =====
+    private val _archiveInfo = MutableStateFlow<String?>(null)
+    val archiveInfo: StateFlow<String?> = _archiveInfo
+
+    fun clearArchiveInfo() { _archiveInfo.value = null }
+
     fun autoArchiveOldData() = viewModelScope.launch {
         try {
             val count = ArchiveHelper.autoArchive(getApplication(), trxDao)
@@ -146,11 +173,6 @@ suspend fun removeDuplicates(): Int {
         }
     }
 
-    private val _archiveInfo = MutableStateFlow<String?>(null)
-    val archiveInfo: StateFlow<String?> = _archiveInfo
-
-    fun clearArchiveInfo() { _archiveInfo.value = null }
-
     fun getDatabaseSizeMb(): Double =
         ArchiveHelper.getDatabaseSizeMb(getApplication())
 
@@ -159,15 +181,8 @@ suspend fun removeDuplicates(): Int {
 
     fun getArchiveFiles(): List<java.io.File> =
         ArchiveHelper.listArchives(getApplication())
-}
-        if (products.value.isEmpty()) {
-            productDao.insert(Product(name = "Beras 5kg", price = 65000.0, stock = 20, category = "Sembako"))
-            productDao.insert(Product(name = "Minyak Goreng 2L", price = 35000.0, stock = 30, category = "Sembako"))
-            productDao.insert(Product(name = "Gula 1kg", price = 15000.0, stock = 25, category = "Sembako"))
-            productDao.insert(Product(name = "Aqua 600ml", price = 4000.0, stock = 48, category = "Minuman"))
-            productDao.insert(Product(name = "Indomie Goreng", price = 3500.0, stock = 100, category = "Makanan"))
-        }
 
+    // ===== CHECKOUT =====
     fun checkout(method: String, amountPaid: Double, onSuccess: (Transaction) -> Unit) {
         viewModelScope.launch {
             val items = _cart.value
@@ -205,6 +220,12 @@ suspend fun removeDuplicates(): Int {
         }
     }
 
+    // ===== GET TRANSACTIONS FOR EXPORT =====
+    suspend fun getTransactionsList(from: Long, to: Long): List<Transaction> {
+        return trxDao.getByRangeOnce(from, to)
+    }
+
+    // ===== LAPORAN =====
     data class Laporan(
         val countTrx: Int,
         val totalOmzet: Double,
@@ -215,9 +236,6 @@ suspend fun removeDuplicates(): Int {
         val perCashier: Map<String, Pair<Int, Double>>,
         val topProducts: List<Pair<String, Pair<Int, Double>>>
     )
-suspend fun getTransactionsList(from: Long, to: Long): List<Transaction> {
-    return trxDao.getByRangeOnce(from, to)
-}
 
     suspend fun generateLaporan(from: Long, to: Long, cashierId: Long? = null): Laporan {
         val list = if (cashierId != null) trxDao.getByCashier(cashierId, from, to)
