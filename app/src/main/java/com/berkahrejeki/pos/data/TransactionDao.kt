@@ -16,4 +16,10 @@ interface TransactionDao {
 
     @Insert
     suspend fun insert(t: Transaction): Long
+
+    @Query("DELETE FROM transactions WHERE id = :id")
+    suspend fun deleteById(id: Long)
+
+    @Query("SELECT COUNT(*) FROM transactions")
+    suspend fun countAll(): Int
 }
