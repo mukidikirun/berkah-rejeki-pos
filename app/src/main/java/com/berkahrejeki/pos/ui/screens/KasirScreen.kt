@@ -1,5 +1,8 @@
 package com.berkahrejeki.pos.ui.screens
 
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -85,6 +88,19 @@ fun KasirScreen(vm: MainViewModel) {
     var paidInput by remember { mutableStateOf("") }
     var lastTrx by remember { mutableStateOf<Transaction?>(null) }
 var showScanner by remember { mutableStateOf(false) }
+// ===== AUTO-FOCUS KOLOM PENCARIAN =====
+val focusRequester = remember { FocusRequester() }
+val keyboardController = LocalSoftwareKeyboardController.current
+
+LaunchedEffect(Unit) {
+    // Delay sedikit agar UI siap dulu, lalu fokus otomatis
+    kotlinx.coroutines.delay(300)
+    try {
+        focusRequester.requestFocus()
+    } catch (e: Exception) {
+        // Abaikan kalau gagal fokus
+    }
+}
     val categories = remember(products) {
         listOf("Semua") + products.map { it.category }.distinct().sorted()
     }
@@ -100,7 +116,10 @@ var showScanner by remember { mutableStateOf(false) }
         OutlinedTextField(
     value = search,
     onValueChange = { search = it },
-    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
+    modifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 8.dp, vertical = 6.dp)
+        .focusRequester(focusRequester),
     placeholder = { Text("Cari produk atau scan barcode...") },
     leadingIcon = { Icon(Icons.Default.Search, null) },
     trailingIcon = {
