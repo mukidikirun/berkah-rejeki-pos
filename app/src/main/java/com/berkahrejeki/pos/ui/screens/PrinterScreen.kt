@@ -74,17 +74,20 @@ fun PrinterScreen() {
         }
 
         Spacer(Modifier.height(16.dp))
-        Button(
-            onClick = {
-                try {
-                    val testTrx = Transaction(
-                        invoiceNo = "TEST-" + System.currentTimeMillis(),
-                        itemsJson = """[{"name":"Test Item","price":10000,"qty":1,"subtotal":10000}]""",
-                        total = 10000.0,
-                        paymentMethod = "CASH",
-                        amountPaid = 10000.0,
-                        cashierName = "Test"
-                    )
+        Button(onClick = {
+    val ok = printer.connect(d)
+    if (ok) {
+        connected = d.name
+    } else {
+        connected = null
+        // Opsional: Anda bisa menambahkan Toast/Snackbar di sini
+    }
+}) { 
+    Text(
+        if (connected == d.name) "Terhubung" else "Hubungkan",
+        color = if (connected == d.name) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onPrimary
+    ) 
+        }
                     printer.printReceipt(testTrx)
                 } catch (e: Exception) {
                     // Abaikan error cetak, jangan sampai aplikasi crash
