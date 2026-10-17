@@ -23,7 +23,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val vm: MainViewModel = viewModel()
-            LaunchedEffect(Unit) { vm.seedDefaultUsers(); vm.seedIfEmpty() }
+            LaunchedEffect(Unit) {
+    vm.seedDefaultUsers()
+    vm.seedIfEmpty()
+    vm.autoArchiveOldData()
+            }
 
             val ctx = LocalContext.current
             var theme by remember { mutableStateOf(ThemeManager.load(ctx)) }
