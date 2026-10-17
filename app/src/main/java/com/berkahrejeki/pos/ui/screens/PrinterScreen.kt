@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp  // ← INI YANG SEBELUMNYA HILANG
 import com.berkahrejeki.pos.data.Transaction
 import com.berkahrejeki.pos.printer.ThermalPrinter
 
@@ -21,7 +22,6 @@ import com.berkahrejeki.pos.printer.ThermalPrinter
 @Composable
 fun PrinterScreen() {
     val ctx = LocalContext.current
-    // Gunakan try-catch agar tidak crash jika HP tidak support Bluetooth
     val devices = remember {
         try {
             val adapter = BluetoothAdapter.getDefaultAdapter()
@@ -49,7 +49,7 @@ fun PrinterScreen() {
                         color = MaterialTheme.colorScheme.onErrorContainer)
                     Spacer(Modifier.height(4.dp))
                     Text("Pastikan Printer sudah di-PAIR di Pengaturan HP dan izin Bluetooth sudah diberikan.", 
-                        fontSize = 11.dp.value.sp,
+                        fontSize = 11.sp,  // ← DIPERBAIKI
                         color = MaterialTheme.colorScheme.onErrorContainer)
                 }
             }
