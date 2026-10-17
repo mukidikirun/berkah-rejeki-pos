@@ -43,6 +43,9 @@ import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
 
 fun formatRp(v: Double): String =
     "Rp " + NumberFormat.getNumberInstance(Locale("id", "ID")).format(v)
@@ -138,6 +141,23 @@ LaunchedEffect(Unit) {
             }
         }
     },
+    singleLine = true,
+    shape = RoundedCornerShape(12.dp),
+    // TAMBAHKAN KODE DI BAWAH INI
+    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+    keyboardActions = KeyboardActions(
+        onDone = {
+            // Saat scanner menekan Enter, paksa masuk keranjang
+            val found = products.firstOrNull {
+                it.barcode == search || it.name.equals(search, true)
+            }
+            if (found != null) {
+                vm.addToCart(found)
+                search = ""
+            }
+        }
+    )
+)
     singleLine = true,
     shape = RoundedCornerShape(12.dp)
 )
