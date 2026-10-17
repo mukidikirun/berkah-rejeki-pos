@@ -1,5 +1,6 @@
 package com.berkahrejeki.pos
 
+import com.berkahrejeki.pos.data.ArchiveHelper
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -132,6 +133,33 @@ suspend fun removeDuplicates(): Int {
     return removed
 }
     fun seedIfEmpty() = viewModelScope.launch {
+            // ============ AUTO-ARCHIVE ============
+    fun autoArchiveOldData() = viewModelScope.launch {
+        try {
+            val count = ArchiveHelper.autoArchive(getApplication(), trxDao)
+            if (count > 0) {
+                _archiveInfo.value = "Arsip: $count transaksi dipindah ke CSV"
+            }
+            ArchiveHelper.cleanOldArchives(getApplication(), 6)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private val _archiveInfo = MutableStateFlow<String?>(null)
+    val archiveInfo: StateFlow<String?> = _archiveInfo
+
+    fun clearArchiveInfo() { _archiveInfo.value = null }
+
+    fun getDatabaseSizeMb(): Double =
+        ArchiveHelper.getDatabaseSizeMb(getApplication())
+
+    fun getArchiveSizeMb(): Double =
+        ArchiveHelper.getArchiveSizeMb(getApplication())
+
+    fun getArchiveFiles(): List<java.io.File> =
+        ArchiveHelper.listArchives(getApplication())
+}
         if (products.value.isEmpty()) {
             productDao.insert(Product(name = "Beras 5kg", price = 65000.0, stock = 20, category = "Sembako"))
             productDao.insert(Product(name = "Minyak Goreng 2L", price = 35000.0, stock = 30, category = "Sembako"))
@@ -139,7 +167,6 @@ suspend fun removeDuplicates(): Int {
             productDao.insert(Product(name = "Aqua 600ml", price = 4000.0, stock = 48, category = "Minuman"))
             productDao.insert(Product(name = "Indomie Goreng", price = 3500.0, stock = 100, category = "Makanan"))
         }
-    }
 
     fun checkout(method: String, amountPaid: Double, onSuccess: (Transaction) -> Unit) {
         viewModelScope.launch {
