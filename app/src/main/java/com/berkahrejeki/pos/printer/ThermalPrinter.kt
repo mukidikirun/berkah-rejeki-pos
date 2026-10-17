@@ -16,21 +16,30 @@ class ThermalPrinter(private val context: Context) {
     private var output: OutputStream? = null
 
     @SuppressLint("MissingPermission")
-    fun connect(device: BluetoothDevice): Boolean {
-        return try {
-            val adapter: BluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-            adapter.cancelDiscovery()
-            socket = device.createRfcommSocketToServiceRecord(
-                UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
-            )
-            socket?.connect()
-            output = socket?.outputStream
-            true
-        } catch (e: Exception) {
-            e.printStackTrace()
-            false
-        }
+fun connect(device: BluetoothDevice): Boolean {
+    return try {
+        // 1. Pastikan socket lama ditutup dulu agar tidak bentrok
+        disconnect()
+
+        val adapter: BluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+        adapter.cancelDiscovery() // Hentikan pencarian perangkat lain
+
+        // 2. Buat koneksi baru (gunakan secure socket)
+        socket = device.createRfcommSocketToServiceRecord(
+            UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
+        )
+        
+        // 3. Coba sambungkan
+        socket?.connect()
+        output = socket?.outputStream
+        true
+    } catch (e: Exception) {
+        e.printStackTrace()
+        // Jika gagal, pastikan socket ditutup agar tidak nyangkut
+        disconnect() 
+        false
     }
+}
 
     fun disconnect() {
         try {
