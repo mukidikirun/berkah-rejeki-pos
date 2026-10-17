@@ -21,8 +21,15 @@ import com.berkahrejeki.pos.printer.ThermalPrinter
 @Composable
 fun PrinterScreen() {
     val ctx = LocalContext.current
-    val adapter = remember { BluetoothAdapter.getDefaultAdapter() }
-    val devices = remember { adapter?.bondedDevices?.toList() ?: emptyList() }
+    // Gunakan try-catch agar tidak crash jika HP tidak support Bluetooth
+    val devices = remember {
+        try {
+            val adapter = BluetoothAdapter.getDefaultAdapter()
+            adapter?.bondedDevices?.toList() ?: emptyList()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
     var connected by remember { mutableStateOf<String?>(null) }
     val printer = remember { ThermalPrinter(ctx) }
 
@@ -34,7 +41,18 @@ fun PrinterScreen() {
         Spacer(Modifier.height(16.dp))
 
         if (devices.isEmpty()) {
-            Text("Tidak ada perangkat Bluetooth yang sudah dipasangkan.")
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    Text("Tidak ada perangkat Bluetooth yang terdeteksi.", 
+                        color = MaterialTheme.colorScheme.onErrorContainer)
+                    Spacer(Modifier.height(4.dp))
+                    Text("Pastikan Printer sudah di-PAIR di Pengaturan HP dan izin Bluetooth sudah diberikan.", 
+                        fontSize = 11.dp.value.sp,
+                        color = MaterialTheme.colorScheme.onErrorContainer)
+                }
+            }
         } else {
             LazyColumn {
                 items(devices) { d ->
@@ -58,15 +76,19 @@ fun PrinterScreen() {
         Spacer(Modifier.height(16.dp))
         Button(
             onClick = {
-                val testTrx = Transaction(
-                    invoiceNo = "TEST-" + System.currentTimeMillis(),
-                    itemsJson = """[{"name":"Test Item","price":10000,"qty":1,"subtotal":10000}]""",
-                    total = 10000.0,
-                    paymentMethod = "CASH",
-                    amountPaid = 10000.0,
-                    cashierName = "Test"
-                )
-                printer.printReceipt(testTrx)
+                try {
+                    val testTrx = Transaction(
+                        invoiceNo = "TEST-" + System.currentTimeMillis(),
+                        itemsJson = """[{"name":"Test Item","price":10000,"qty":1,"subtotal":10000}]""",
+                        total = 10000.0,
+                        paymentMethod = "CASH",
+                        amountPaid = 10000.0,
+                        cashierName = "Test"
+                    )
+                    printer.printReceipt(testTrx)
+                } catch (e: Exception) {
+                    // Abaikan error cetak, jangan sampai aplikasi crash
+                }
             },
             enabled = connected != null,
             modifier = Modifier.fillMaxWidth()
