@@ -2,7 +2,6 @@ package com.berkahrejeki.pos.ui.screens
 
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
-import com.berkahrejeki.pos.printer.ThermalPrinter
 import androidx.compose.ui.platform.LocalContext
 import com.berkahrejeki.pos.printer.ThermalPrinter
 import androidx.compose.material.icons.filled.Print
