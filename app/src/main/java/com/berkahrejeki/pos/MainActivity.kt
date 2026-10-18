@@ -1,5 +1,11 @@
 package com.berkahrejeki.pos
 
+import android.Manifest
+import android.os.Build
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -21,6 +27,19 @@ import com.berkahrejeki.pos.ui.theme.*
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Minta izin otomatis (Khusus Android 12 ke atas)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            requestPermissions(
+                arrayOf(
+                    Manifest.permission.BLUETOOTH_CONNECT,
+                    Manifest.permission.BLUETOOTH_SCAN,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ),
+                100
+            )
+        }
+
         setContent {
             val vm: MainViewModel = viewModel()
             LaunchedEffect(Unit) {
