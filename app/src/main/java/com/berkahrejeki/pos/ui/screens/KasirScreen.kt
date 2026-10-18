@@ -1,5 +1,10 @@
 package com.berkahrejeki.pos.ui.screens
 
+import android.annotation.SuppressLint
+import android.bluetooth.BluetoothAdapter
+import androidx.compose.ui.platform.LocalContext
+import com.berkahrejeki.pos.printer.ThermalPrinter
+import androidx.compose.material.icons.filled.Print
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -225,7 +230,25 @@ fun KasirScreen(vm: MainViewModel) {
     }
 
     lastTrx?.let { trx ->
-        ReceiptPreviewDialog(trx = trx, onDismiss = { lastTrx = null }, onPrint = { lastTrx = null })
+    ReceiptPreviewDialog(
+        trx = trx, 
+        onDismiss = { lastTrx = null }, 
+        onPrint = { trxToPrint ->
+            // Ambil konteks dan siapkan printer
+            val printer = ThermalPrinter(ctx)
+            val adapter = BluetoothAdapter.getDefaultAdapter()
+            val device = adapter?.bondedDevices?.firstOrNull { it.name?.contains("RPP", true) == true } // Cari printer RPP02N
+                ?: adapter?.bondedDevices?.firstOrNull() // Jika tidak ketemu, ambil perangkat pertama
+
+            if (device != null) {
+                if (printer.connect(device)) {
+                    printer.printReceipt(trxToPrint)
+                    printer.disconnect()
+                }
+            }
+            lastTrx = null // Tutup dialog setelah proses cetak
+        }
+    )
     }
 
     if (showScanner) {
