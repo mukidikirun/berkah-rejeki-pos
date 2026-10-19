@@ -1,5 +1,6 @@
 package com.berkahrejeki.pos.ui.screens
 
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import androidx.compose.ui.platform.LocalContext
@@ -101,8 +102,12 @@ fun KasirScreen(vm: MainViewModel) {
     val keyboardController = LocalSoftwareKeyboardController.current
 
     LaunchedEffect(Unit) {
-        kotlinx.coroutines.delay(300)
-        try { focusRequester.requestFocus() } catch (e: Exception) {}
+    kotlinx.coroutines.delay(300)
+    try { 
+        focusRequester.requestFocus() 
+        kotlinx.coroutines.delay(100)
+        keyboardController?.hide() // <--- TAMBAHKAN BARIS INI
+    } catch (e: Exception) {}
     }
 
     val categories = remember(products) {
