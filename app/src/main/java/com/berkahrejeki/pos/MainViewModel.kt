@@ -1,6 +1,7 @@
 package com.berkahrejeki.pos
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.berkahrejeki.pos.data.*
@@ -12,34 +13,25 @@ import java.security.MessageDigest
 import java.text.SimpleDateFormat
 import java.util.*
 
-fun loginWithBiometric() {
-    // Cari user terakhir yang login (biasanya admin)
-    viewModelScope.launch {
-        val u = userDao.findByUsername("admin") // Hardcode admin, atau simpan username terakhir di SharedPreferences
-        if (u != null) {
-            _session.value = Session(u.id, u.username, u.fullName, UserRole.valueOf(u.role))
-        }
-    }
-}
 class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val db = AppDatabase.get(app)
     private val productDao = db.productDao()
     private val trxDao = db.transactionDao()
-    private val userDao = db.userDao()
+    private val userDao = db.userDao() // <-- Ini yang sebelumnya hilang
 
-    // ===== SESSION =====
+    // SESSION
     private val _session = MutableStateFlow<Session?>(null)
     val session: StateFlow<Session?> = _session
 
-    // ===== PRODUCTS =====
+    // PRODUCTS
     val products: StateFlow<List<Product>> =
         productDao.getAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
 
-    // ===== USERS =====
+    // USERS
     val users: StateFlow<List<User>> =
         userDao.getAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
 
-    // ===== TRANSACTIONS =====
+    // TRANSACTIONS
     private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
     val transactions: StateFlow<List<Transaction>> = _transactions
 
@@ -47,7 +39,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         trxDao.getAll().collect { _transactions.value = it }
     }
 
-    // ===== CART =====
+    // CART
     private val _cart = MutableStateFlow<List<CartItem>>(emptyList())
     val cart: StateFlow<List<CartItem>> = _cart
     val cartTotal: StateFlow<Double> = _cart.map { list ->
@@ -78,7 +70,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun clearCart() { _cart.value = emptyList() }
 
-    // ===== AUTH =====
+    // AUTH
     fun hashPassword(p: String): String {
         val md = MessageDigest.getInstance("SHA-256")
         return md.digest(p.toByteArray()).joinToString("") { "%02x".format(it) }
@@ -90,11 +82,32 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             if (u == null) { onResult(false, "Username tidak ditemukan"); return@launch }
             if (u.password != hashPassword(password)) { onResult(false, "Password salah"); return@launch }
             if (!u.active) { onResult(false, "Akun tidak aktif"); return@launch }
+            
             _session.value = Session(
                 userId = u.id, username = u.username, fullName = u.fullName,
                 role = UserRole.valueOf(u.role)
             )
+            // Simpan username terakhir untuk fitur sidik jari
+            getApplication<Application>().getSharedPreferences("bio_pref", Context.MODE_PRIVATE)
+                .edit().putString("last_user", u.username).apply()
+                
             onResult(true, null)
+        }
+    }
+
+    fun loginWithBiometric() {
+        viewModelScope.launch {
+            val prefs = getApplication<Application>().getSharedPreferences("bio_pref", Context.MODE_PRIVATE)
+            val lastUser = prefs.getString("last_user", null)
+            if (lastUser != null) {
+                val u = userDao.findByUsername(lastUser)
+                if (u != null) {
+                    _session.value = Session(
+                        userId = u.id, username = u.username, fullName = u.fullName,
+                        role = UserRole.valueOf(u.role)
+                    )
+                }
+            }
         }
     }
 
@@ -120,7 +133,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun updateUser(u: User) = viewModelScope.launch { userDao.update(u) }
     fun deleteUser(u: User) = viewModelScope.launch { userDao.delete(u) }
 
-    // ===== PRODUCT CRUD =====
+    // PRODUCT CRUD
     fun addProduct(p: Product, onDone: () -> Unit = {}) = viewModelScope.launch {
         productDao.insert(p); onDone()
     }
@@ -131,7 +144,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     suspend fun findDuplicates(): List<Pair<String, List<Product>>> {
         val all = products.value
         if (all.isEmpty()) return emptyList()
-        val grouped = all.groupBy { it.name.trim().lowercase() }
+        val grouped = all.groupBy { it.name.trim().lowercase().replace("\\s+".toRegex(), " ") }
         return grouped
             .filter { it.value.size > 1 }
             .map { (_, list) -> list.first().name to list }
@@ -140,11 +153,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     suspend fun removeDuplicates(): Int {
         val all = products.value
-        val grouped = all.groupBy { it.name.trim().lowercase() }
+        val grouped = all.groupBy { it.name.trim().lowercase().replace("\\s+".toRegex(), " ") }
         var removed = 0
         grouped.forEach { (_, list) ->
             if (list.size > 1) {
-                val toDelete = list.drop(1)
+                val sortedList = list.sortedByDescending { it.stock }
+                val toDelete = sortedList.drop(1)
                 toDelete.forEach {
                     productDao.delete(it)
                     removed++
@@ -164,7 +178,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    // ===== AUTO ARCHIVE =====
+    // AUTO ARCHIVE
     private val _archiveInfo = MutableStateFlow<String?>(null)
     val archiveInfo: StateFlow<String?> = _archiveInfo
 
@@ -182,16 +196,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun getDatabaseSizeMb(): Double =
-        ArchiveHelper.getDatabaseSizeMb(getApplication())
+    fun getDatabaseSizeMb(): Double = ArchiveHelper.getDatabaseSizeMb(getApplication())
+    fun getArchiveSizeMb(): Double = ArchiveHelper.getArchiveSizeMb(getApplication())
+    fun getArchiveFiles(): List<java.io.File> = ArchiveHelper.listArchives(getApplication())
 
-    fun getArchiveSizeMb(): Double =
-        ArchiveHelper.getArchiveSizeMb(getApplication())
-
-    fun getArchiveFiles(): List<java.io.File> =
-        ArchiveHelper.listArchives(getApplication())
-
-    // ===== CHECKOUT =====
+    // CHECKOUT
     fun checkout(method: String, amountPaid: Double, onSuccess: (Transaction) -> Unit) {
         viewModelScope.launch {
             val items = _cart.value
@@ -229,12 +238,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    // ===== GET TRANSACTIONS FOR EXPORT =====
+    // GET TRANSACTIONS FOR EXPORT
     suspend fun getTransactionsList(from: Long, to: Long): List<Transaction> {
         return trxDao.getByRangeOnce(from, to)
     }
 
-    // ===== LAPORAN =====
+    // LAPORAN
     data class Laporan(
         val countTrx: Int,
         val totalOmzet: Double,
