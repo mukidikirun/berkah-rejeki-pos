@@ -51,19 +51,32 @@ class MainActivity : ComponentActivity() {
             var theme by remember { mutableStateOf(ThemeManager.load(ctx)) }
 
             BerkahRejekiTheme(theme) {
-                val session by vm.session.collectAsStateWithLifecycle()
-                if (session == null) {
-                    LoginScreen(vm)
-                } else {
-                    BerkahRejekiApp(vm, session!!, theme) {
-                        theme = it
-                        ThemeManager.save(ctx, it)
-                    }
-                }
+    val session by vm.session.collectAsStateWithLifecycle()
+    val prefs = ctx.getSharedPreferences("bio_pref", android.content.Context.MODE_PRIVATE)
+    var bioEnabled by remember { mutableStateOf(prefs.getBoolean("bio_enabled", false)) }
+
+    if (session == null) {
+        LoginScreen(
+            vm = vm,
+            bioEnabled = bioEnabled,
+            onBioLogin = {
+                // Panggil fungsi sidik jari
+                BiometricHelper.showBiometricPrompt(
+                    activity = this@MainActivity,
+                    onSuccess = { 
+                        vm.loginWithBiometric() // Fungsi baru di ViewModel
+                    },
+                    onError = { /* Abaikan */ }
+                )
             }
+        )
+    } else {
+        BerkahRejekiApp(vm, session!!, theme) {
+            theme = it
+            ThemeManager.save(ctx, it)
         }
     }
-}
+            }
 
 data class MenuItem(
     val route: String,
