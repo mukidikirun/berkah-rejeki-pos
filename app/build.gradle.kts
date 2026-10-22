@@ -41,6 +41,7 @@ android {
 dependencies {
     // AndroidX Core
     implementation("androidx.core:core-ktx:1.12.0")
+implementation("androidx.biometric:biometric:1.1.0")
 
     // Lifecycle
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
