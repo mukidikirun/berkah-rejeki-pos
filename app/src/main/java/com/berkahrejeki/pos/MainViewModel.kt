@@ -12,6 +12,15 @@ import java.security.MessageDigest
 import java.text.SimpleDateFormat
 import java.util.*
 
+fun loginWithBiometric() {
+    // Cari user terakhir yang login (biasanya admin)
+    viewModelScope.launch {
+        val u = userDao.findByUsername("admin") // Hardcode admin, atau simpan username terakhir di SharedPreferences
+        if (u != null) {
+            _session.value = Session(u.id, u.username, u.fullName, UserRole.valueOf(u.role))
+        }
+    }
+}
 class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val db = AppDatabase.get(app)
     private val productDao = db.productDao()
