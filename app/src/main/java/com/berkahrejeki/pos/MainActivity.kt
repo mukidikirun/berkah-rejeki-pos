@@ -25,11 +25,10 @@ import com.berkahrejeki.pos.ui.screens.*
 import com.berkahrejeki.pos.ui.theme.*
 
 class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+    class MainActivity : androidx.fragment.app.FragmentActivity() {
         
         // Minta izin otomatis (Khusus Android 12 ke atas)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) 
             requestPermissions(
                 arrayOf(
                     Manifest.permission.BLUETOOTH_CONNECT,
