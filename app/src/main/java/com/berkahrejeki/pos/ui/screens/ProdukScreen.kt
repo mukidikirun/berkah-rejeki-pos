@@ -29,20 +29,26 @@ fun ProdukScreen(vm: MainViewModel) {
     var showForm by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<Product?>(null) }
 
-    // Tab State: 0 = Master Stok, 1 = Barang Terjual (Habis)
+    // 0 = Master Barang, 1 = Barang Terjual (Habis)
     var selectedTab by remember { mutableIntStateOf(0) }
     
     var showDupDialog by remember { mutableStateOf(false) }
     var dupList by remember { mutableStateOf<List<Pair<String, List<Product>>>>(emptyList()) }
     var snackbarMsg by remember { mutableStateOf<String?>(null) }
     var loadingDup by remember { mutableStateOf(false) }
+    
+    // State untuk scanner restock
+    var showRestockScanner by remember { mutableStateOf(false) }
+    
     val scope = rememberCoroutineScope()
 
-    // Filter produk berdasarkan tab yang dipilih
+    // LOGIKA FILTER TAB
     val displayProducts = if (selectedTab == 0) {
-        products.filter { it.stock > 0 } // Master Stok (Tersedia)
+        // MASTER BARANG: Hanya ambil 1 produk unik per nama (mengabaikan duplikat)
+        products.distinctBy { it.name.trim().lowercase() } 
     } else {
-        products.filter { it.stock <= 0 } // Barang Terjual (Habis)
+        // TERJUAL: Hanya tampilkan yang stoknya 0 atau minus
+        products.filter { it.stock <= 0 } 
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -87,8 +93,8 @@ fun ProdukScreen(vm: MainViewModel) {
                     Tab(
                         selected = selectedTab == 0,
                         onClick = { selectedTab = 0 },
-                        text = { Text("Master Stok", fontWeight = FontWeight.Bold) },
-                        icon = { Icon(Icons.Default.Inventory2, null) }
+                        text = { Text("Master Barang", fontWeight = FontWeight.Bold) },
+                        icon = { Icon(Icons.Default.List, null) }
                     )
                     Tab(
                         selected = selectedTab == 1,
@@ -98,18 +104,30 @@ fun ProdukScreen(vm: MainViewModel) {
                     )
                 }
 
+                // ===== TOMBOL SCAN RESTOCK (Hanya muncul di Tab Master Barang) =====
+                if (selectedTab == 0) {
+                    OutlinedButton(
+                        onClick = { showRestockScanner = true },
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp)
+                    ) {
+                        Icon(Icons.Default.QrCodeScanner, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Scan Barcode untuk Tambah Stok")
+                    }
+                }
+
                 if (displayProducts.isEmpty()) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(
-                                if (selectedTab == 0) Icons.Default.Inventory2 else Icons.Default.ShoppingBag,
+                                if (selectedTab == 0) Icons.Default.List else Icons.Default.ShoppingBag,
                                 null,
                                 tint = MaterialTheme.colorScheme.onSurface.copy(0.3f),
                                 modifier = Modifier.size(80.dp)
                             )
                             Spacer(Modifier.height(12.dp))
                             Text(
-                                if (selectedTab == 0) "Belum ada produk tersedia" else "Belum ada barang terjual",
+                                if (selectedTab == 0) "Belum ada Master Barang" else "Belum ada barang terjual",
                                 color = MaterialTheme.colorScheme.onSurface.copy(0.5f),
                                 fontSize = 14.sp
                             )
@@ -131,7 +149,7 @@ fun ProdukScreen(vm: MainViewModel) {
                         items(displayProducts, key = { it.id }) { p ->
                             ProductItem(
                                 product = p,
-                                isSoldOut = selectedTab == 1, // Jika di tab habis, tampilkan warna beda
+                                isSoldOut = selectedTab == 1,
                                 onEdit = { editing = p; showForm = true },
                                 onDelete = { vm.deleteProduct(p) }
                             )
@@ -152,6 +170,7 @@ fun ProdukScreen(vm: MainViewModel) {
         }
     }
 
+    // Form Tambah/Edit Produk
     if (showForm) {
         ProductFormDialog(
             initial = editing,
@@ -164,6 +183,7 @@ fun ProdukScreen(vm: MainViewModel) {
         )
     }
 
+    // Dialog Hapus Duplikat
     if (showDupDialog) {
         DuplicateDialog(
             duplicates = dupList,
@@ -175,6 +195,25 @@ fun ProdukScreen(vm: MainViewModel) {
                     snackbarMsg = "$removed produk duplikat berhasil dihapus"
                 }
             }
+        )
+    }
+
+    // ===== LAYAR SCANNER RESTOCK =====
+    if (showRestockScanner) {
+        BarcodeScannerScreen(
+            onBarcodeDetected = { barcode ->
+                showRestockScanner = false
+                // Cari produk berdasarkan barcode yang discan
+                val found = products.firstOrNull { it.barcode == barcode || it.name.equals(barcode, true) }
+                if (found != null) {
+                    // Jika ketemu, langsung buka form Edit
+                    editing = found
+                    showForm = true
+                } else {
+                    snackbarMsg = "Produk dengan barcode tersebut belum terdaftar"
+                }
+            },
+            onClose = { showRestockScanner = false }
         )
     }
 }
@@ -191,7 +230,6 @@ fun ProductItem(
         shape = MaterialTheme.shapes.medium,
         elevation = CardDefaults.cardElevation(1.dp),
         colors = CardDefaults.cardColors(
-            // Jika barang sudah habis/terjual, beri warna latar sedikit abu-abu
             containerColor = if (isSoldOut) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) 
                              else MaterialTheme.colorScheme.surface
         )
