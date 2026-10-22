@@ -23,7 +23,11 @@ import com.berkahrejeki.pos.MainViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen(vm: MainViewModel) {
+fun LoginScreen(
+    vm: MainViewModel,
+    bioEnabled: Boolean = false, // Parameter baru
+    onBioLogin: () -> Unit = {}  // Parameter baru
+) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var showPwd by remember { mutableStateOf(false) }
@@ -99,11 +103,22 @@ fun LoginScreen(vm: MainViewModel) {
                             error = "Lengkapi username & password"; return@Button
                         }
                         loading = true
-                        vm.login(username, password) { ok, msg ->
-                            loading = false
-                            if (!ok) error = msg
-                        }
-                    },
+                        vm.login(username, paloading
+                                 // TOMBOL SIDIK JARI
+if (bioEnabled) {
+    Spacer(Modifier.height(16.dp))
+    IconButton(
+        onClick = onBioLogin,
+        modifier = Modifier.size(64.dp)
+    ) {
+        Icon(
+            imageVector = androidx.compose.material.icons.Icons.Default.Fingerprint,
+            contentDescription = "Login Sidik Jari",
+            modifier = Modifier.size(48.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
+    }
+}
                     enabled = !loading,
                     modifier = Modifier.fillMaxWidth().height(50.dp)
                 ) {
