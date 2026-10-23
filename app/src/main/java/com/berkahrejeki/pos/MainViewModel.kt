@@ -14,6 +14,37 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {
+   // Data untuk Tab Stok Keluar (Barang Terjual)
+data class TerjualItem(
+    val name: String,
+    val qty: Int,
+    val total: Double,
+    val date: String
+)
+
+suspend fun getRiwayatTerjual(): List<TerjualItem> {
+    // Ambil semua transaksi
+    val allTrx = trxDao.getByRangeOnce(0, System.currentTimeMillis())
+    val result = mutableListOf<TerjualItem>()
+    val dateFmt = SimpleDateFormat("dd/MM/yy HH:mm", Locale.getDefault())
+
+    allTrx.forEach { trx ->
+        val items = JSONArray(trx.itemsJson)
+        for (i in 0 until items.length()) {
+            val o = items.getJSONObject(i)
+            result.add(
+                TerjualItem(
+                    name = o.getString("name"),
+                    qty = o.getInt("qty"),
+                    total = o.getDouble("subtotal"),
+                    date = dateFmt.format(Date(trx.timestamp))
+                )
+            )
+        }
+    }
+    // Urutkan dari yang terbaru
+    return result.reversed()
+}
     private val db = AppDatabase.get(app)
     private val productDao = db.productDao()
     private val trxDao = db.transactionDao()
