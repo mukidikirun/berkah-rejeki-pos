@@ -16,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -24,13 +23,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.berkahrejeki.pos.AppConfig
 import com.berkahrejeki.pos.MainViewModel
 import com.berkahrejeki.pos.data.Product
-import com.berkahrejeki.pos.export.ExportHelper
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,7 +33,6 @@ fun ProdukScreen(vm: MainViewModel) {
     val products by vm.products.collectAsStateWithLifecycle()
     var showForm by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<Product?>(null) }
-    val ctx = LocalContext.current
 
     // 0 = Master Barang, 1 = Stok Keluar, 2 = Habis
     var selectedTab by remember { mutableIntStateOf(0) }
@@ -79,9 +73,12 @@ fun ProdukScreen(vm: MainViewModel) {
 
     // LOGIKA FILTER TAB
     val displayProducts = if (selectedTab == 0) {
-        products.distinctBy { it.name.trim().lowercase() }
+        // MASTER BARANG: Hanya tampilkan yang stoknya LEBIH DARI 0
+        products.filter { it.stock > 0 } 
+            .distinctBy { it.name.trim().lowercase() }
             .filter { it.name.contains(searchQuery, true) || it.barcode.contains(searchQuery) }
     } else {
+        // HABIS: Tampilkan yang stoknya 0 atau minus (termasuk minus)
         products.filter { it.stock <= 0 } 
     }
 
@@ -153,10 +150,19 @@ fun ProdukScreen(vm: MainViewModel) {
                         leadingIcon = { Icon(Icons.Default.Search, null) },
                         trailingIcon = { if (searchQuery.isNotEmpty()) IconButton(onClick = { searchQuery = "" }) { Icon(Icons.Default.Close, null) } },
                         singleLine = true, keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onDone = {
-                            val found = products.firstOrNull { it.barcode == searchQuery || it.name.equals(searchQuery, true) }
-                            if (found != null) { editing = found; showForm = true; searchQuery = "" }
-                        })
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                // Cari di SEMUA produk (termasuk yang habis/minus)
+                                val found = products.firstOrNull { it.barcode == searchQuery || it.name.equals(searchQuery, true) }
+                                if (found != null) {
+                                    editing = found
+                                    showForm = true
+                                    searchQuery = ""
+                                } else {
+                                    snackbarMsg = "Barang tidak ditemukan di database"
+                                }
+                            }
+                        )
                     )
                     OutlinedButton(
                         onClick = { showRestockScanner = true },
@@ -177,28 +183,6 @@ fun ProdukScreen(vm: MainViewModel) {
                             Text("Belum ada barang terjual", color = Color.Gray)
                         }
                     } else {
-                        // Tombol Export
-                        Row(Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(
-                                onClick = {
-                                    scope.launch {
-                                        val file = ExportHelper.exportToCsv(ctx, vm.getTransactionsList(0, System.currentTimeMillis()), "Awal", "Sekarang")
-                                        if (file != null) ExportHelper.shareFile(ctx, file)
-                                    }
-                                },
-                                modifier = Modifier.weight(1f)
-                            ) { Text("Export CSV", fontSize = 12.sp) }
-                            Button(
-                                onClick = {
-                                    scope.launch {
-                                        val file = ExportHelper.exportToPdf(ctx, vm.getTransactionsList(0, System.currentTimeMillis()), "Awal", "Sekarang")
-                                        if (file != null) ExportHelper.shareFile(ctx, file)
-                                    }
-                                },
-                                modifier = Modifier.weight(1f)
-                            ) { Text("Export PDF", fontSize = 12.sp) }
-                        }
-
                         // List Riwayat
                         LazyColumn(Modifier.fillMaxSize().padding(horizontal = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             items(riwayatTerjual) { item ->
@@ -254,8 +238,14 @@ fun ProdukScreen(vm: MainViewModel) {
         BarcodeScannerScreen(
             onBarcodeDetected = { barcode ->
                 showRestockScanner = false
+                // Cari di SEMUA produk, bukan hanya yang ada stoknya
                 val found = products.firstOrNull { it.barcode == barcode || it.name.equals(barcode, true) }
-                if (found != null) { editing = found; showForm = true } else { snackbarMsg = "Barcode tidak terdaftar" }
+                if (found != null) {
+                    editing = found
+                    showForm = true
+                } else {
+                    snackbarMsg = "Barcode tidak terdaftar di sistem"
+                }
             },
             onClose = { showRestockScanner = false }
         )
@@ -321,7 +311,6 @@ private fun getCategoryIconLocal(category: String): String {
     }
 }
 
-// Sisa fungsi DuplicateDialog & ProductFormDialog tidak berubah...
 @Composable
 fun DuplicateDialog(duplicates: List<Pair<String, List<Product>>>, onDismiss: () -> Unit, onConfirm: () -> Unit) {
     val totalDuplicates = duplicates.sumOf { it.second.size - 1 }
