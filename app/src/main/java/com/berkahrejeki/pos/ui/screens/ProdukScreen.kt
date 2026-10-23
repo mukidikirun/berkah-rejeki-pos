@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -12,8 +13,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,15 +42,32 @@ fun ProdukScreen(vm: MainViewModel) {
     var snackbarMsg by remember { mutableStateOf<String?>(null) }
     var loadingDup by remember { mutableStateOf(false) }
     
-    // State untuk scanner restock
+    // State untuk scanner restock & search
     var showRestockScanner by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    
+    // Auto Focus
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(selectedTab) {
+        if (selectedTab == 0) {
+            kotlinx.coroutines.delay(300)
+            try { 
+                focusRequester.requestFocus() 
+                kotlinx.coroutines.delay(100)
+                keyboardController?.hide()
+            } catch (e: Exception) {}
+        }
+    }
     
     val scope = rememberCoroutineScope()
 
-    // LOGIKA FILTER TAB
+    // LOGIKA FILTER TAB & SEARCH
     val displayProducts = if (selectedTab == 0) {
-        // MASTER BARANG: Hanya ambil 1 produk unik per nama (mengabaikan duplikat)
-        products.distinctBy { it.name.trim().lowercase() } 
+        // MASTER BARANG: Bebas duplikat & filter berdasarkan search
+        products.distinctBy { it.name.trim().lowercase() }
+            .filter { it.name.contains(searchQuery, true) || it.barcode.contains(searchQuery) }
     } else {
         // TERJUAL: Hanya tampilkan yang stoknya 0 atau minus
         products.filter { it.stock <= 0 } 
@@ -104,11 +126,41 @@ fun ProdukScreen(vm: MainViewModel) {
                     )
                 }
 
-                // ===== TOMBOL SCAN RESTOCK (Hanya muncul di Tab Master Barang) =====
+                // ===== KOLOM PENCARIAN & TOMBOL SCAN (Hanya muncul di Tab Master Barang) =====
                 if (selectedTab == 0) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                            .focusRequester(focusRequester),
+                        placeholder = { Text("Scan barcode / cari barang...") },
+                        leadingIcon = { Icon(Icons.Default.Search, null) },
+                        trailingIcon = {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { searchQuery = "" }) {
+                                    Icon(Icons.Default.Close, "Hapus")
+                                }
+                            }
+                        },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                val found = products.firstOrNull { it.barcode == searchQuery || it.name.equals(searchQuery, true) }
+                                if (found != null) {
+                                    editing = found
+                                    showForm = true
+                                    searchQuery = ""
+                                }
+                            }
+                        )
+                    )
+                    
                     OutlinedButton(
                         onClick = { showRestockScanner = true },
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp)
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         Icon(Icons.Default.QrCodeScanner, null)
                         Spacer(Modifier.width(8.dp))
@@ -203,10 +255,8 @@ fun ProdukScreen(vm: MainViewModel) {
         BarcodeScannerScreen(
             onBarcodeDetected = { barcode ->
                 showRestockScanner = false
-                // Cari produk berdasarkan barcode yang discan
                 val found = products.firstOrNull { it.barcode == barcode || it.name.equals(barcode, true) }
                 if (found != null) {
-                    // Jika ketemu, langsung buka form Edit
                     editing = found
                     showForm = true
                 } else {
