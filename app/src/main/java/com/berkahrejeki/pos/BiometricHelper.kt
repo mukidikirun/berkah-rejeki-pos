@@ -7,9 +7,14 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 
 object BiometricHelper {
+    // Fungsi untuk mengecek apakah HP punya keamanan (Sidik Jari, Wajah, atau Pola/PIN)
     fun canUseBiometric(context: Context): Boolean {
         val manager = BiometricManager.from(context)
-        return manager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS
+        // BIOMETRIC_WEAK mencakup Wajah & Pola. DEVICE_CREDENTIAL mencakup PIN/Password HP.
+        val authenticators = BiometricManager.Authenticators.BIOMETRIC_WEAK or
+                BiometricManager.Authenticators.DEVICE_CREDENTIAL
+                
+        return manager.canAuthenticate(authenticators) == BiometricManager.BIOMETRIC_SUCCESS
     }
 
     fun showBiometricPrompt(
@@ -32,8 +37,12 @@ object BiometricHelper {
 
         val promptInfo = BiometricPrompt.PromptInfo.Builder()
             .setTitle("Login Berkah Rejeki")
-            .setSubtitle("Tempelkan sidik jari Anda untuk masuk")
-            .setNegativeButtonText("Gunakan Password")
+            .setSubtitle("Gunakan Sidik Jari, Wajah, atau Pola HP Anda")
+            // Mengizinkan Pola/PIN/Wajah
+            .setAllowedAuthenticators(
+                BiometricManager.Authenticators.BIOMETRIC_WEAK or
+                BiometricManager.Authenticators.DEVICE_CREDENTIAL
+            )
             .build()
 
         biometricPrompt.authenticate(promptInfo)
