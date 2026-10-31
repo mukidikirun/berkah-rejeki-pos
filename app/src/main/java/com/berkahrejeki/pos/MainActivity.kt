@@ -1,5 +1,7 @@
 package com.berkahrejeki.pos
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
@@ -19,6 +21,16 @@ import com.berkahrejeki.pos.ui.theme.*
 
 class MainActivity : androidx.fragment.app.FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+    super.onActivityResult(requestCode, resultCode, data)
+    // Jika requestCode 999 dan resultCode OK, berarti pola/PIN berhasil
+    if (requestCode == 999 && resultCode == Activity.RESULT_OK) {
+        // Panggil ViewModel untuk login (kita perlu akses vm)
+        // Karena vm ada di dalam setContent, kita gunakan trik sederhana:
+        // Cukup restart activity agar user bisa tap tombol login cepat lagi,
+        // atau panggil fungsi login biomterik.
+    }
+        }
         super.onCreate(savedInstanceState)
         setContent {
             val vm: MainViewModel = viewModel()
