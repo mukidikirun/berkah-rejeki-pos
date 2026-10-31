@@ -165,7 +165,7 @@ fun LoginScreen(
                     }
                 }
 
-                // ===== TOMBOL SIDIK JARI =====
+                // ===== TOMBOL LOGIN CEPAT (POLA / WAJAH / SIDIK JARI) =====
                 if (bioEnabled) {
                     Spacer(Modifier.height(16.dp))
                     IconButton(
@@ -173,19 +173,20 @@ fun LoginScreen(
                         modifier = Modifier.size(64.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Fingerprint,
-                            contentDescription = "Login Sidik Jari",
+                            imageVector = Icons.Default.LockOpen,
+                            contentDescription = "Login Cepat",
                             modifier = Modifier.size(48.dp),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
                     Text(
-                        "Login Sidik Jari",
+                        "Login Cepat (Pola/Wajah/Sidik Jari)",
                         fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
+                        textAlign = TextAlign.Center
                     )
                 }
-                // =============================
+                // =========================================================
 
                 Spacer(Modifier.height(16.dp))
                 Text(
