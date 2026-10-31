@@ -353,16 +353,35 @@ fun ProductFormDialog(initial: Product?, onDismiss: () -> Unit, onSave: (Product
         title = { Text(if (initial == null) "Tambah Produk" else "Edit Produk") },
         text = {
             Column(Modifier.heightIn(max = 450.dp).verticalScroll(rememberScrollState())) {
-                OutlinedTextField(value = name, onValueChange = { name = it; errorMsg = null }, label = { Text("Nama Produk *") }, modifier = Modifier.fillMaxWidth(), singleLine = true, isError = errorMsg != null && name.isBlank())
+                // 1. NAMA PRODUK
+                OutlinedTextField(
+                    value = name, onValueChange = { name = it; errorMsg = null }, 
+                    label = { Text("Nama Produk *") }, modifier = Modifier.fillMaxWidth(), 
+                    singleLine = true, isError = errorMsg != null && name.isBlank()
+                )
                 Spacer(Modifier.height(8.dp))
-                OutlinedTextField(value = barcode, onValueChange = { barcode = it }, label = { Text("Barcode (opsional)") }, modifier = Modifier.fillMaxWidth(), singleLine = true, trailingIcon = { IconButton(onClick = { showScanner = true }) { Icon(Icons.Default.QrCodeScanner, "Scan", tint = MaterialTheme.colorScheme.primary) } })
+                
+                // 2. BARCODE
+                OutlinedTextField(
+                    value = barcode, onValueChange = { barcode = it }, 
+                    label = { Text("Barcode (opsional)") }, modifier = Modifier.fillMaxWidth(), 
+                    singleLine = true, trailingIcon = { IconButton(onClick = { showScanner = true }) { Icon(Icons.Default.QrCodeScanner, "Scan", tint = MaterialTheme.colorScheme.primary) } }
+                )
                 Spacer(Modifier.height(8.dp))
+                
+                // 3. KATEGORI
                 OutlinedTextField(value = category, onValueChange = { category = it }, label = { Text("Kategori") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                 Spacer(Modifier.height(8.dp))
+                
+                // 4. HARGA JUAL
                 OutlinedTextField(value = price, onValueChange = { price = it.filter { c -> c.isDigit() }; errorMsg = null }, label = { Text("Harga Jual *") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth(), singleLine = true, isError = errorMsg != null && price.isBlank())
                 Spacer(Modifier.height(8.dp))
+                
+                // 5. HARGA MODAL
                 OutlinedTextField(value = cost, onValueChange = { cost = it.filter { c -> c.isDigit() } }, label = { Text("Harga Modal (opsional)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth(), singleLine = true)
                 Spacer(Modifier.height(8.dp))
+                
+                // 6. STOK
                 OutlinedTextField(value = stock, onValueChange = { stock = it.filter { c -> c.isDigit() } }, label = { Text("Stok") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth(), singleLine = true)
             }
         },
