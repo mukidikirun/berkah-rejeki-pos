@@ -20,53 +20,58 @@ import com.berkahrejeki.pos.ui.screens.*
 import com.berkahrejeki.pos.ui.theme.*
 
 class MainActivity : androidx.fragment.app.FragmentActivity() {
+    
+    // Kita simpan ViewModel di sini agar bisa diakses dari onActivityResult
+    private lateinit var viewModel: MainViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
-        override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-    super.onActivityResult(requestCode, resultCode, data)
-    // Jika requestCode 999 dan resultCode OK, berarti pola/PIN berhasil
-    if (requestCode == 999 && resultCode == Activity.RESULT_OK) {
-        // Panggil ViewModel untuk login (kita perlu akses vm)
-        // Karena vm ada di dalam setContent, kita gunakan trik sederhana:
-        // Cukup restart activity agar user bisa tap tombol login cepat lagi,
-        // atau panggil fungsi login biomterik.
-    }
-        }
         super.onCreate(savedInstanceState)
         setContent {
-            val vm: MainViewModel = viewModel()
+            viewModel = viewModel()
             LaunchedEffect(Unit) {
-                vm.seedDefaultUsers()
-                vm.seedIfEmpty()
-                vm.autoArchiveOldData()
+                viewModel.seedDefaultUsers()
+                viewModel.seedIfEmpty()
+                viewModel.autoArchiveOldData()
             }
 
             val ctx = LocalContext.current
             var theme by remember { mutableStateOf(ThemeManager.load(ctx)) }
 
             BerkahRejekiTheme(theme) {
-                val session by vm.session.collectAsStateWithLifecycle()
+                val session by viewModel.session.collectAsStateWithLifecycle()
                 val prefs = ctx.getSharedPreferences("bio_pref", android.content.Context.MODE_PRIVATE)
                 val hasLastUser = prefs.getString("last_user", null) != null
                 val canBio = BiometricHelper.canUseBiometric(ctx)
 
                 if (session == null) {
                     LoginScreen(
-                        vm = vm,
+                        vm = viewModel,
                         bioEnabled = hasLastUser && canBio,
                         onBioLogin = {
                             BiometricHelper.showBiometricPrompt(
                                 activity = this@MainActivity,
-                                onSuccess = { vm.loginWithBiometric() },
+                                onSuccess = { viewModel.loginWithBiometric() },
                                 onError = { }
                             )
                         }
                     )
                 } else {
-                    BerkahRejekiApp(vm, session!!, theme) {
+                    BerkahRejekiApp(viewModel, session!!, theme) {
                         theme = it
                         ThemeManager.save(ctx, it)
                     }
                 }
+            }
+        }
+    }
+
+    // FUNGSI INI DITARUH DI LUAR onCreate (Sejajar dengan onCreate)
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 999 && resultCode == Activity.RESULT_OK) {
+            // Jika pola/PIN tablet berhasil, langsung login
+            if (::viewModel.isInitialized) {
+                viewModel.loginWithBiometric()
             }
         }
     }
